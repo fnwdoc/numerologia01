@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numerologia Bot - Protótipo</title>
+    <link rel="stylesheet" href="chatbot.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="bot-info">
+                <div class="bot-avatar">🔮</div>
+                <div class="bot-details">
+                    <h3>Numerologia Bot</h3>
+                    <span class="status">Online</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="message-content">
+                    <p>Olá! 👋 Sou seu assistente de numerologia empresarial!</p>
+                    <p>Posso te ajudar com:</p>
+                    <ul>
+                        <li>📊 Análise numerológica de nomes</li>
+                        <li>🏢 Numerologia empresarial</li>
+                        <li>🔢 Cálculo de números da sorte</li>
+                        <li>💡 Sugestões de nomes</li>
+                    </ul>
+                    <p>Digite o nome da sua empresa ou pessoa para começar!</p>
+                </div>
+                <div class="message-time">12:00</div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Digite sua mensagem..." maxlength="500">
+                <button id="sendButton">📤</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="numerologia.js"></script>
+    <script src="chatbot.js"></script>
+</body>
+</html>
