@@ -3,8 +3,11 @@ class NumerologiaBot {
         this.messageInput = document.getElementById('messageInput');
         this.sendButton = document.getElementById('sendButton');
         this.chatMessages = document.getElementById('chatMessages');
+        this.currentStep = 'menu';
+        this.currentName = '';
         
         this.initializeEventListeners();
+        this.showWelcomeMessage();
     }
 
     initializeEventListeners() {
@@ -80,66 +83,90 @@ class NumerologiaBot {
     }
 
     processMessage(message) {
-        const lowerMessage = message.toLowerCase();
+        const lowerMessage = message.toLowerCase().trim();
+
+        if (/^\d+$/.test(message.trim())) {
+            const choice = parseInt(message.trim());
+            
+            if (this.currentStep === 'menu') {
+                this.handleMenuChoice(choice);
+                return;
+            } else if (this.currentStep === 'waiting_analysis') {
+                this.performAnalysis(choice);
+                return;
+            } else if (this.currentStep === 'waiting_suggestion_number') {
+                this.gerarSugestoes(choice);
+                this.showContinueMenu();
+                return;
+            } else if (choice >= 1 && choice <= 33) {
+                this.explicarNumero(choice);
+                this.showContinueMenu();
+                return;
+            }
+        }
+
+        if (lowerMessage === 'menu' || lowerMessage === 'voltar') {
+            this.showMainMenu();
+            return;
+        }
+
+        if (this.currentStep === 'waiting_name') {
+            if (message.trim().length > 0) {
+                this.currentName = message.trim();
+                this.showAnalysisMenu();
+            } else {
+                this.addBotMessage(`<p>Por favor, digite um nome válido para análise! 😊</p>`);
+            }
+            return;
+        }
 
         if (lowerMessage.includes('análise completa') || lowerMessage.includes('analise completa')) {
             const nome = message.replace(/análise completa|analise completa/gi, '').trim();
             if (nome) {
                 this.analisarNomeCompleto(nome);
+                this.showContinueMenu();
             } else {
-                this.addBotMessage(`
-                    <p>Para análise completa, digite: "análise completa [nome da empresa]"</p>
-                    <p>Exemplo: "análise completa Empresa XYZ"</p>
-                `);
+                this.requestNameInput();
             }
         } else if (lowerMessage.includes('motivação') || lowerMessage.includes('motivacao')) {
             const nome = message.replace(/motivação|motivacao/gi, '').trim();
             if (nome) {
                 this.analisarMotivacao(nome);
+                this.showContinueMenu();
             } else {
-                this.addBotMessage(`<p>Digite o nome para análise de motivação!</p>`);
+                this.requestNameInput();
             }
         } else if (lowerMessage.includes('impressão') || lowerMessage.includes('impressao')) {
             const nome = message.replace(/impressão|impressao/gi, '').trim();
             if (nome) {
                 this.analisarImpressao(nome);
+                this.showContinueMenu();
             } else {
-                this.addBotMessage(`<p>Digite o nome para análise de impressão!</p>`);
+                this.requestNameInput();
             }
         } else if (lowerMessage.includes('olá') || lowerMessage.includes('oi') || lowerMessage.includes('hello')) {
             this.addBotMessage(`
-                <p>Olá! 😊 Que bom te ver aqui!</p>
-                <p>Sou especialista em numerologia empresarial. Digite o nome da sua empresa ou uma pessoa para eu fazer a análise numerológica completa!</p>
+                <p>Olá! 😊</p>
+                <p>Estou aqui para ajudar com análises numerológicas empresariais.</p>
             `);
+            this.showMainMenu();
         } else if (lowerMessage.includes('ajuda') || lowerMessage.includes('help')) {
-            this.addBotMessage(`
-                <p>Posso te ajudar com:</p>
-                <ul>
-                    <li>📊 <strong>Análise básica</strong> - Digite qualquer nome</li>
-                    <li>🔍 <strong>Análise completa</strong> - Digite "análise completa [nome]"</li>
-                    <li>💭 <strong>Número de Motivação</strong> - Digite "motivação [nome]"</li>
-                    <li>👁️ <strong>Número de Impressão</strong> - Digite "impressão [nome]"</li>
-                    <li>🔢 <strong>Significados dos números</strong> - Digite um número de 1 a 33</li>
-                    <li>💡 <strong>Sugestões de nomes</strong> - Digite "sugestões" + número desejado</li>
-                </ul>
-                <p><strong>Exemplos:</strong></p>
-                <p>• "análise completa Empresa XYZ"<br>• "motivação Google"<br>• "impressão Apple"</p>
-            `);
+            this.showMainMenu();
         } else if (lowerMessage.includes('sugestões') || lowerMessage.includes('sugestoes')) {
-            const numero = this.extrairNumero(message);
-            if (numero) {
+            const numeroMatch = message.match(/\d+/);
+            if (numeroMatch) {
+                const numero = parseInt(numeroMatch[0]);
                 this.gerarSugestoes(numero);
+                this.showContinueMenu();
             } else {
-                this.addBotMessage(`
-                    <p>Para gerar sugestões, digite o número desejado!</p>
-                    <p>Exemplo: "sugestões para número 1" ou "sugestões 8"</p>
-                `);
+                this.showSuggestionsMenu();
             }
-        } else if (this.isNumero(message)) {
-            const numero = parseInt(message);
-            this.explicarNumero(numero);
+        } else if (message.trim().length > 0) {
+            this.analisarNome(message.trim());
+            this.showContinueMenu();
         } else {
-            this.analisarNome(message);
+            this.addBotMessage(`<p>Por favor, digite algo para eu poder ajudar! 😊</p>`);
+            this.showMainMenu();
         }
     }
 
@@ -249,6 +276,211 @@ class NumerologiaBot {
         `);
     }
 
+    showMainMenu() {
+        this.currentStep = 'menu';
+        this.addBotMessage(`
+            <div class="menu-container">
+                <p><strong>🎯 Escolha uma opção:</strong></p>
+                <div class="menu-options">
+                    <div class="menu-option" onclick="bot.selectOption(1)">
+                        <span class="option-number">1</span>
+                        <div class="option-content">
+                            <strong>📊 Análise de Nome</strong>
+                            <small>Descubra os números da sua empresa</small>
+                        </div>
+                    </div>
+                    <div class="menu-option" onclick="bot.selectOption(2)">
+                        <span class="option-number">2</span>
+                        <div class="option-content">
+                            <strong>🔢 Significado de Números</strong>
+                            <small>Entenda o que cada número representa</small>
+                        </div>
+                    </div>
+                    <div class="menu-option" onclick="bot.selectOption(3)">
+                        <span class="option-number">3</span>
+                        <div class="option-content">
+                            <strong>💡 Sugestões de Nomes</strong>
+                            <small>Encontre nomes com energia específica</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="menu-instruction">Digite o número da opção ou clique diretamente!</p>
+            </div>
+        `);
+    }
+
+    showAnalysisMenu() {
+        this.currentStep = 'waiting_analysis';
+        this.addBotMessage(`
+            <div class="menu-container">
+                <p><strong>🔍 Análise para "${this.currentName}"</strong></p>
+                <p>Escolha o tipo de análise:</p>
+                <div class="menu-options">
+                    <div class="menu-option" onclick="bot.selectAnalysis(1)">
+                        <span class="option-number">1</span>
+                        <div class="option-content">
+                            <strong>📊 Análise Básica</strong>
+                            <small>Número de Expressão e significado</small>
+                        </div>
+                    </div>
+                    <div class="menu-option" onclick="bot.selectAnalysis(2)">
+                        <span class="option-number">2</span>
+                        <div class="option-content">
+                            <strong>🔍 Análise Completa</strong>
+                            <small>Expressão, Motivação e Impressão</small>
+                        </div>
+                    </div>
+                    <div class="menu-option" onclick="bot.selectAnalysis(3)">
+                        <span class="option-number">3</span>
+                        <div class="option-content">
+                            <strong>💭 Número de Motivação</strong>
+                            <small>O que a empresa busca</small>
+                        </div>
+                    </div>
+                    <div class="menu-option" onclick="bot.selectAnalysis(4)">
+                        <span class="option-number">4</span>
+                        <div class="option-content">
+                            <strong>👁️ Número de Impressão</strong>
+                            <small>Como é percebida pelo público</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="menu-instruction">Digite o número da opção ou clique diretamente!</p>
+            </div>
+        `);
+    }
+
+    showSuggestionsMenu() {
+        this.currentStep = 'waiting_suggestion_number';
+        this.addBotMessage(`
+            <div class="menu-container">
+                <p><strong>💡 Sugestões de Nomes</strong></p>
+                <p>Digite o número desejado (1-9) para gerar sugestões de nomes com essa energia:</p>
+                <div class="number-grid">
+                    <div class="number-option" onclick="bot.generateSuggestions(1)">1</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(2)">2</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(3)">3</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(4)">4</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(5)">5</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(6)">6</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(7)">7</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(8)">8</div>
+                    <div class="number-option" onclick="bot.generateSuggestions(9)">9</div>
+                </div>
+                <p class="menu-instruction">Clique no número ou digite diretamente!</p>
+            </div>
+        `);
+    }
+
+    showContinueMenu() {
+        this.addBotMessage(`
+            <div class="continue-menu">
+                <p><strong>🎯 O que deseja fazer agora?</strong></p>
+                <div class="continue-options">
+                    <button class="continue-btn" onclick="bot.showMainMenu()">🏠 Menu Principal</button>
+                    <button class="continue-btn" onclick="bot.requestNameInput()">🔄 Nova Análise</button>
+                </div>
+            </div>
+        `);
+    }
+
+    requestNameInput() {
+        this.currentStep = 'waiting_name';
+        this.addBotMessage(`
+            <p><strong>📝 Digite o nome da empresa para análise:</strong></p>
+            <p class="input-hint">Exemplo: "Minha Empresa", "Google", "Apple"</p>
+        `);
+    }
+
+    handleMenuChoice(choice) {
+        switch(choice) {
+            case 1:
+                this.requestNameInput();
+                break;
+            case 2:
+                this.showNumberExplanationMenu();
+                break;
+            case 3:
+                this.showSuggestionsMenu();
+                break;
+            default:
+                this.addBotMessage(`<p>Opção inválida. Digite 1, 2 ou 3.</p>`);
+                this.showMainMenu();
+        }
+    }
+
+    performAnalysis(choice) {
+        if (!this.currentName) {
+            this.requestNameInput();
+            return;
+        }
+
+        switch(choice) {
+            case 1:
+                this.analisarNome(this.currentName);
+                break;
+            case 2:
+                this.analisarNomeCompleto(this.currentName);
+                break;
+            case 3:
+                this.analisarMotivacao(this.currentName);
+                break;
+            case 4:
+                this.analisarImpressao(this.currentName);
+                break;
+            default:
+                this.addBotMessage(`<p>Opção inválida. Digite 1, 2, 3 ou 4.</p>`);
+                this.showAnalysisMenu();
+                return;
+        }
+        this.showContinueMenu();
+    }
+
+    showNumberExplanationMenu() {
+        this.addBotMessage(`
+            <div class="menu-container">
+                <p><strong>🔢 Significado dos Números</strong></p>
+                <p>Digite um número de 1 a 33 para ver seu significado:</p>
+                <div class="number-grid">
+                    ${Array.from({length: 9}, (_, i) => 
+                        `<div class="number-option" onclick="bot.explainNumber(${i + 1})">${i + 1}</div>`
+                    ).join('')}
+                </div>
+                <p class="menu-instruction">Ou digite qualquer número de 1 a 33!</p>
+            </div>
+        `);
+    }
+
+    selectOption(option) {
+        this.addUserMessage(option.toString());
+        this.handleMenuChoice(option);
+    }
+
+    selectAnalysis(option) {
+        this.addUserMessage(option.toString());
+        this.performAnalysis(option);
+    }
+
+    generateSuggestions(number) {
+        this.addUserMessage(number.toString());
+        this.gerarSugestoes(number);
+        this.showContinueMenu();
+    }
+
+    explainNumber(number) {
+        this.addUserMessage(number.toString());
+        this.explicarNumero(number);
+        this.showContinueMenu();
+    }
+
+    showWelcomeMessage() {
+        this.addBotMessage(`
+            <p>👋 Olá! Sou seu assistente de <strong>Numerologia Empresarial</strong>!</p>
+            <p>Posso ajudar você a descobrir os números que influenciam sua empresa e orientar na escolha do nome ideal para seu negócio.</p>
+        `);
+        this.showMainMenu();
+    }
+
     explicarNumero(numero) {
         if (numero < 1 || numero > 33 || (numero > 9 && numero !== 11 && numero !== 22 && numero !== 33)) {
             this.addBotMessage(`
@@ -315,6 +547,7 @@ class NumerologiaBot {
     }
 }
 
+let bot;
 document.addEventListener('DOMContentLoaded', () => {
-    new NumerologiaBot();
+    bot = new NumerologiaBot();
 });
